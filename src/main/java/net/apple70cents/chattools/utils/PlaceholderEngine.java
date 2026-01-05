@@ -541,7 +541,7 @@ public final class PlaceholderEngine {
                 try {
                     long max = Long.parseLong(args[0]);
                     if (max <= 0) return "0";
-                    return String.valueOf(ThreadLocalRandom.current().nextLong(max));
+                    return String.valueOf(ThreadLocalRandom.current().nextLong(max + 1));
                 } catch (NumberFormatException e) {
                     return "0";
                 }
@@ -549,12 +549,30 @@ public final class PlaceholderEngine {
                 try {
                     long min = Long.parseLong(args[0]);
                     long max = Long.parseLong(args[1]);
-                    if (min >= max) return String.valueOf(min);
-                    return String.valueOf(ThreadLocalRandom.current().nextLong(min, max));
+                    if (min > max) return String.valueOf(min);
+                    return String.valueOf(ThreadLocalRandom.current().nextLong(min, max + 1));
                 } catch (NumberFormatException e) {
                     return "0";
                 }
             }
+        });
+        MAPPINGS.put("random_string", args -> {
+            int length = 8;
+            if (args.length > 0) {
+                try {
+                    length = Integer.parseInt(args[0]);
+                    if (length <= 0) length = 8;
+                    if (length > 100) length = 100;
+                } catch (NumberFormatException e) {
+                    length = 8;
+                }
+            }
+            String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            StringBuilder sb = new StringBuilder(length);
+            for (int i = 0; i < length; i++) {
+                sb.append(chars.charAt(ThreadLocalRandom.current().nextInt(chars.length())));
+            }
+            return sb.toString();
         });
         MAPPINGS.put("sqrt", args -> String.valueOf(Math.sqrt(Double.parseDouble(args[0]))));
         MAPPINGS.put("cbrt", args -> String.valueOf(Math.cbrt(Double.parseDouble(args[0]))));
@@ -598,6 +616,18 @@ public final class PlaceholderEngine {
         MAPPINGS.put("to_radix", args -> new BigInteger(args[0],
                 args.length > 1 && !args[1].isEmpty() ? Integer.parseInt(args[1]) : 10).toString(
                 args.length > 2 && !args[2].isEmpty() ? Integer.parseInt(args[2]) : 10).toUpperCase());
+        MAPPINGS.put("calc", args -> {
+            if (args.length == 0 || args[0].isBlank()) return "";
+            try {
+                double result = new MathExpressionEvaluator(args[0]).parse();
+                if (result == (long) result) {
+                    return String.valueOf((long) result);
+                }
+                return String.valueOf(result);
+            } catch (Exception e) {
+                return "ERROR: " + e.getMessage();
+            }
+        });
     }
 
     // debug prints
@@ -944,6 +974,171 @@ public final class PlaceholderEngine {
             if (peek() != c) throw new RuntimeException("Expected '" + c + "' at pos " + p);
             p++;
             return c;
+        }
+    }
+
+    /**
+     * Math expression evaluator supporting:
+     * - Operators: +, -, *, /, %, ^
+     * - Constants: pi, e, tau
+     * - Functions: sqrt, cbrt, sin, cos, tan, asin, acos, atan, log, ln, log10, abs, floor, ceil, round
+     */
+    private static class MathExpressionEvaluator {
+        private final String expr;
+        private int pos = 0;
+
+        MathExpressionEvaluator(String expr) {
+            this.expr = expr.replaceAll("\\s+", "").toLowerCase();
+        }
+
+        double parse() {
+            double result = parseExpression();
+            if (pos < expr.length()) {
+                throw new RuntimeException("Unexpected character: " + expr.charAt(pos));
+            }
+            return result;
+        }
+
+        private double parseExpression() {
+            double result = parseTerm();
+            while (pos < expr.length()) {
+                char op = expr.charAt(pos);
+                if (op == '+') {
+                    pos++;
+                    result += parseTerm();
+                } else if (op == '-') {
+                    pos++;
+                    result -= parseTerm();
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private double parseTerm() {
+            double result = parsePower();
+            while (pos < expr.length()) {
+                char op = expr.charAt(pos);
+                if (op == '*') {
+                    pos++;
+                    result *= parsePower();
+                } else if (op == '/') {
+                    pos++;
+                    result /= parsePower();
+                } else if (op == '%') {
+                    pos++;
+                    result %= parsePower();
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private double parsePower() {
+            double result = parseUnary();
+            if (pos < expr.length() && expr.charAt(pos) == '^') {
+                pos++;
+                result = Math.pow(result, parsePower());
+            }
+            return result;
+        }
+
+        private double parseUnary() {
+            if (pos < expr.length() && expr.charAt(pos) == '-') {
+                pos++;
+                return -parseUnary();
+            }
+            if (pos < expr.length() && expr.charAt(pos) == '+') {
+                pos++;
+                return parseUnary();
+            }
+            return parsePrimary();
+        }
+
+        private double parsePrimary() {
+            if (pos >= expr.length()) {
+                throw new RuntimeException("Unexpected end of expression");
+            }
+
+            char c = expr.charAt(pos);
+
+            // Parentheses
+            if (c == '(') {
+                pos++;
+                double result = parseExpression();
+                if (pos >= expr.length() || expr.charAt(pos) != ')') {
+                    throw new RuntimeException("Missing closing parenthesis");
+                }
+                pos++;
+                return result;
+            }
+
+            // Number
+            if (Character.isDigit(c) || c == '.') {
+                return parseNumber();
+            }
+
+            // Function or constant
+            if (Character.isLetter(c)) {
+                return parseFunctionOrConstant();
+            }
+
+            throw new RuntimeException("Unexpected character: " + c);
+        }
+
+        private double parseNumber() {
+            int start = pos;
+            while (pos < expr.length() && (Character.isDigit(expr.charAt(pos)) || expr.charAt(pos) == '.')) {
+                pos++;
+            }
+            return Double.parseDouble(expr.substring(start, pos));
+        }
+
+        private double parseFunctionOrConstant() {
+            int start = pos;
+            while (pos < expr.length() && Character.isLetterOrDigit(expr.charAt(pos))) {
+                pos++;
+            }
+            String name = expr.substring(start, pos);
+
+            // Constants
+            switch (name) {
+                case "pi": return Math.PI;
+                case "e": return Math.E;
+                case "tau": return Math.PI * 2;
+            }
+
+            // Functions require parentheses
+            if (pos >= expr.length() || expr.charAt(pos) != '(') {
+                throw new RuntimeException("Unknown constant or missing parentheses: " + name);
+            }
+            pos++; // skip '('
+            double arg = parseExpression();
+            if (pos >= expr.length() || expr.charAt(pos) != ')') {
+                throw new RuntimeException("Missing closing parenthesis for function: " + name);
+            }
+            pos++; // skip ')'
+
+            switch (name) {
+                case "sqrt": return Math.sqrt(arg);
+                case "cbrt": return Math.cbrt(arg);
+                case "sin": return Math.sin(arg);
+                case "cos": return Math.cos(arg);
+                case "tan": return Math.tan(arg);
+                case "asin": case "arcsin": return Math.asin(arg);
+                case "acos": case "arccos": return Math.acos(arg);
+                case "atan": case "arctan": return Math.atan(arg);
+                case "log": case "log10": return Math.log10(arg);
+                case "ln": return Math.log(arg);
+                case "abs": return Math.abs(arg);
+                case "floor": return Math.floor(arg);
+                case "ceil": return Math.ceil(arg);
+                case "round": return Math.round(arg);
+                case "exp": return Math.exp(arg);
+                default: throw new RuntimeException("Unknown function: " + name);
+            }
         }
     }
 }
