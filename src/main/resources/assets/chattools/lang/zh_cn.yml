@@ -563,6 +563,9 @@ key:
         DelayInMilliseconds:
           .: 延迟（毫秒）
           '@Tooltip': 发送此消息前的等待时间，单位为毫秒
+        MaxDelayInMilliseconds:
+          .: 最大延迟（毫秒）
+          '@Tooltip': 如果大于最小延迟，响应时间将在最小和最大之间随机。
         ForceDisableFormatter:
           .: 禁用聊天注入
           '@Tooltip': 切换是否在响应时临时关闭聊天注入的尝试。

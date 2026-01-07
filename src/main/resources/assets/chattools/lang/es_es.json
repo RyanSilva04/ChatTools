@@ -245,6 +245,8 @@
   "key.chattools.responder.List.Message.@Tooltip": "Una respuesta automática a un mensaje.\n{pos} -> (X,Y,Z)\n<gradient> -> Degradados, consulta las preguntas frecuentes.\n{$GROUP} -> El contenido del grupo coincidente `$GROUP`",
   "key.chattools.responder.List.DelayInMilliseconds": "Retraso (en milisegundos)",
   "key.chattools.responder.List.DelayInMilliseconds.@Tooltip": "Tiempo de espera (en milisegundos) antes de responder.",
+  "key.chattools.responder.List.MaxDelayInMilliseconds": "Retraso Máximo (en milisegundos)",
+  "key.chattools.responder.List.MaxDelayInMilliseconds.@Tooltip": "Si es mayor que el retraso mínimo, el tiempo de respuesta será aleatorio entre mín y máx.",
   "key.chattools.responder.List.ForceDisableFormatter": "Desactivar Formateador (Sobrescribir)",
   "key.chattools.responder.List.ForceDisableFormatter.@Tooltip": "Activa/desactiva si el formateador debe estar desactivado al responder.",
   "key.chattools.filter.Enabled": "Activar Filtro de Chat",

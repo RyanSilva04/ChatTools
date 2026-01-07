@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +34,7 @@ public class Responder {
         String pattern = "";
         String message = "";
         long delayInMilliseconds = 0;
+        long maxDelayInMilliseconds = 0;
         boolean forceDisableFormatter = false;
         for (SpecialUnits.ResponderRuleUnit unit : SpecialUnits.ResponderRuleUnit.fromList((List) ConfigUtils.get("responder.List"))) {
             if ("*".equals(unit.address) || Pattern.compile(unit.address).matcher(ContextUtils.getSessionIdentifier()).matches()) {
@@ -41,26 +43,32 @@ public class Responder {
                     pattern = unit.pattern;
                     message = unit.message;
                     delayInMilliseconds = unit.delayInMilliseconds;
+                    maxDelayInMilliseconds = unit.maxDelayInMilliseconds;
                     forceDisableFormatter = unit.forceDisableFormatter;
                     break;
                 }
             }
         }
         if (shouldRespond) {
-            makeMessageSchedule(text, pattern, message, delayInMilliseconds, forceDisableFormatter);
+            makeMessageSchedule(text, pattern, message, delayInMilliseconds, maxDelayInMilliseconds, forceDisableFormatter);
         }
     }
 
-    public static void makeMessageSchedule(Component messageReceived, String pattern, String msg, long delayInMilliseconds, boolean forceDisableFormatter) {
-        LoggerUtils.info("[ChatTools] Will respond within " + delayInMilliseconds + "ms");
+    public static void makeMessageSchedule(Component messageReceived, String pattern, String msg, long delayInMilliseconds, long maxDelayInMilliseconds, boolean forceDisableFormatter) {
+        long actualDelay = delayInMilliseconds;
+        if (maxDelayInMilliseconds > delayInMilliseconds) {
+            actualDelay = ThreadLocalRandom.current().nextLong(delayInMilliseconds, maxDelayInMilliseconds + 1);
+        }
+        LoggerUtils.info("[ChatTools] Will respond within " + actualDelay + "ms");
         lastRequestTimestamp = System.currentTimeMillis();
         long timeOnRequest = java.time.Instant.now().getEpochSecond();
         JsonElement jsonElement = TextUtils.component2JsonElement(messageReceived.copy());
         String jsonString = jsonElement != null ? jsonElement.toString() : "ERROR";
+        final long finalDelay = actualDelay;
         new Thread(() -> {
             // delay
             try {
-                Thread.sleep(delayInMilliseconds);
+                Thread.sleep(finalDelay);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

@@ -73,6 +73,7 @@ public class SpecialUnits {
         public String pattern;
         public String message;
         public long delayInMilliseconds;
+        public long maxDelayInMilliseconds;
         public boolean forceDisableFormatter;
 
         public ResponderRuleUnit() {
@@ -80,14 +81,16 @@ public class SpecialUnits {
             this.pattern = "Repeat my words:(?<word>.*)";
             this.message = "You said {word}.";
             this.delayInMilliseconds = 50;
+            this.maxDelayInMilliseconds = 0;
             this.forceDisableFormatter = false;
         }
 
-        public ResponderRuleUnit(String address, String pattern, String message, long delayInMilliseconds, boolean forceDisableFormatter) {
+        public ResponderRuleUnit(String address, String pattern, String message, long delayInMilliseconds, long maxDelayInMilliseconds, boolean forceDisableFormatter) {
             this.address = address;
             this.pattern = pattern;
             this.message = message;
             this.delayInMilliseconds = delayInMilliseconds;
+            this.maxDelayInMilliseconds = maxDelayInMilliseconds;
             this.forceDisableFormatter = forceDisableFormatter;
         }
 
@@ -97,8 +100,9 @@ public class SpecialUnits {
                 String pattern = (String) ((Map) ele).getOrDefault("pattern", "Repeat my words:(?<word>.*)");
                 String message = (String) ((Map) ele).getOrDefault("message", "You said {word}.");
                 long delayInMilliseconds = ((Number) ((Map) ele).getOrDefault("delayInMilliseconds", 50)).longValue();
+                long maxDelayInMilliseconds = ((Number) ((Map) ele).getOrDefault("maxDelayInMilliseconds", 0)).longValue();
                 boolean forceDisableFormatter = (boolean) ((Map) ele).getOrDefault("forceDisableFormatter", false);
-                return new ResponderRuleUnit(address, pattern, message, delayInMilliseconds, forceDisableFormatter);
+                return new ResponderRuleUnit(address, pattern, message, delayInMilliseconds, maxDelayInMilliseconds, forceDisableFormatter);
             } else if (ele instanceof ResponderRuleUnit) {
                 return (ResponderRuleUnit) ele;
             } else {
@@ -116,7 +120,7 @@ public class SpecialUnits {
 
         @Override
         public String toString() {
-            return "ResponderRuleUnit{address='" + address + "', pattern='" + pattern + "', message='" + message + "', delayInMilliseconds=" + delayInMilliseconds + ", forceDisableFormatter=" + forceDisableFormatter + '}';
+            return "ResponderRuleUnit{address='" + address + "', pattern='" + pattern + "', message='" + message + "', delayInMilliseconds=" + delayInMilliseconds + ", maxDelayInMilliseconds=" + maxDelayInMilliseconds + ", forceDisableFormatter=" + forceDisableFormatter + '}';
         }
     }
 

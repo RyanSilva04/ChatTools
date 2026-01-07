@@ -234,6 +234,11 @@ public class ConfigScreenUtils {
                             .setDefaultValue(defaultObj.delayInMilliseconds)
                             .setSaveConsumer(v -> unit.delayInMilliseconds = v).build());
 
+                    entries.add(eb.startLongField(trans(key + ".MaxDelayInMilliseconds"), unit.maxDelayInMilliseconds)
+                            .setTooltip(getTooltip(key + ".MaxDelayInMilliseconds", "longField", unit.maxDelayInMilliseconds))
+                            .setDefaultValue(defaultObj.maxDelayInMilliseconds)
+                            .setSaveConsumer(v -> unit.maxDelayInMilliseconds = v).build());
+
                     entries.add(eb.startBooleanToggle(trans(key + ".ForceDisableFormatter"), unit.forceDisableFormatter)
                             .setTooltip(
                                     getTooltip(key + ".ForceDisableFormatter", "boolean", unit.forceDisableFormatter))

@@ -587,6 +587,9 @@ key:
         DelayInMilliseconds:
           .: Delay (in milliseconds)
           '@Tooltip': Awaiting time (in milliseconds) before responding.
+        MaxDelayInMilliseconds:
+          .: Max Delay (in milliseconds)
+          '@Tooltip': If greater than min delay, response time will be random between min and max.
         ForceDisableFormatter:
           .: Disable Formatter (Override)
           '@Tooltip': Toggles whether Formatter should be off when responding.
